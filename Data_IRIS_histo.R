@@ -1,5 +1,10 @@
+rm(list = ls(all.names = TRUE))
+
 #############################
-# données du RP sur IRIS pour 1990 et en cours / ventilation sur nouvelle géographie des IRIS
+# données du RP sur IRIS  1990 et en cours / ventilation sur nouvelle géographie des IRIS
+
+# récupération depuis sync
+# https://ln.sync.com/dl/276cf3df0/vbvn3m2a-yea7wms7-kj2hmbz9-7jpyy24k
 
 
 # data IRIS RP 2013
@@ -22,7 +27,7 @@ IRIS_RP2013_FAM <- loadWorkbook("./data/stat/base-ic-couples-familles-menages-20
 
 # table totale indicateurs RP 2013
 IRISnew_RP2013 <-
-  irisnew.IDF %>%
+  irisnew %>%
   as.data.frame() %>%
   dplyr::select(CODE_IRIS) %>%
   left_join(IRIS_RP2013_POP %>% dplyr::select(-c(REG, REG2016, DEP, UU2010, COM, LIBCOM, TRIRIS, GRD_QUART, LIBIRIS, TYP_IRIS, MODIF_IRIS, LAB_IRIS)) , by = c("CODE_IRIS" = "IRIS")) %>%

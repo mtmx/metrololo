@@ -9,6 +9,7 @@ library(janitor)
 library(dplyr)
 library(tidyr)
 
+# source https://www.data.gouv.fr/fr/datasets/stations-et-gares-de-metro-rer-et-tramway-de-la-region-ile-de-france/
 src <- "http://api.openstreetmap.fr/oapi/interpreter?data=[out:json];node[%22type:RATP%22~%22metro|rer|tram%22];out;way[%22type:RATP%22~%22metro|rer|tram%22];out;%3E;out%20skel;"
 
 json_stations <- jsonlite::fromJSON(src)
@@ -32,43 +33,38 @@ REF_stations_ageo <-
   mutate(wikiurl = paste0("http://fr.wikipedia.org/wiki/",wikipedia)) %>%
   mutate(wikiurl = gsub(" ", "_", wikiurl, perl=TRUE)) 
 
+# liste des url à traiter
 REF_stations_ageoo <- as.vector(REF_stations_ageo$wikiurl)
 
-ExtractGeoLat <- function(url) {
+#récupération des coordonnées
+ExtractGeoCoords <- function(url) {
   url %>%
     read_html() %>%
-    html_nodes(".p-latitude") %>%
+    html_nodes("#coordinates") %>%
     html_text()
 }
 
-# loop over the links and try to extract the coordinates from the page
-geos.lat <- sapply(1:length(REF_stations_ageoo), function(x) try(ExtractGeoLat(REF_stations_ageoo[x]), silent = T))
+# boucle sur tous les liens
+geos.coords <- sapply(1:length(REF_stations_ageoo), function(x) try(ExtractGeoCoords(REF_stations_ageoo[x]), silent = T))
 
-#
-ExtractGeoLong <- function(url) {
-  url %>%
-    read_html() %>%
-    html_nodes(".p-longitude") %>%
-    html_text()
-}
+# nettoyage des coordonnées
+geos.clean.coords <- sapply(1:length(geos.coords), function(x) geos.coords[[x]][1])
 
-# loop over the links and try to extract the coordinates from the page
-geos.long <- sapply(1:length(REF_stations_ageoo), function(x) try(ExtractGeoLong(REF_stations_ageoo[x]), silent = T))
+REF_stations_ageo2 <- REF_stations_ageo %>% cbind(geos.clean.coords) %>%
+  mutate(geos.clean.coords = gsub("nord","N", geos.clean.coords),
+         geos.clean.coords = gsub("sud","S", geos.clean.coords),
+         geos.clean.coords = gsub("est","E", geos.clean.coords),
+         geos.clean.coords = gsub("ouest","O", geos.clean.coords)) %>%
+  separate(geos.clean.coords, c("geos.clean.lat", "geos.clean.long"), ",") 
+  
 
-# clean up the coordinates
-geos.clean.lat <- sapply(1:length(geos.lat), function(x) geos.lat[[x]][1])
-geos.clean.long <- sapply(1:length(geos.long), function(x) geos.long[[x]][1])
-
-REF_stations_ageo <- REF_stations_ageo %>% cbind(geos.clean.lat, geos.clean.long)
-
-# nettoyage des coordonnées en WGS 84 decimales
+# conversion des coordonnées en WGS 84 decimales
 library(sp)
 
 REF_stations_ageoo <-
-  REF_stations_ageo %>% 
+  REF_stations_ageo2 %>% 
   as.data.frame() %>%
   filter(!is.na(geos.clean.lat))
-
 
 cleanlatlong <- function(x) {
   x1 <- as.character(x)
@@ -117,7 +113,7 @@ REF_stations_fulll <-
   distinct(nom_station,.keep_all = TRUE)
   
 ##############
-# nettoyage du référentiel (principalement éliminatino des doublons) 
+# nettoyage du référentiel (principalement élimination des doublons) 
 
 library(spdplyr)
 
@@ -126,7 +122,7 @@ REF_stations.geo <- SpatialPointsDataFrame(coords = subset(REF_stations_fulll, s
                                            proj4string = CRS("+init=epsg:4326"))    
 REF_stations.geo <- spTransform(REF_stations.geo, CRS("+init=epsg:2154"))  %>% mutate(id = as.character(id))
 
-# stations trop proches 
+# exclusion des stations trop proches 
 
 mat_dist <- gDistance(REF_stations.geo, byid=T)
 min.dist <- apply(mat_dist, 1, function(x) order(x, decreasing=F)[2])
@@ -136,7 +132,7 @@ View(stations_proches)
 # on les élimine à la mano pour conserver le meilleur libellé de station
 
 REF_stations.geo <- REF_stations.geo %>%
-  filter(!id %in% c('292422757','3533463459','4069972808','80481421','3497428293', '3441085434','70166455', '80405300','2354904582','1308998006', '255687197','2799009872','1309031698','3146958062','1731763794','3268094343','3190767995','2489972624','1731763792','329974472','3574677130','264508125','329974475','3268094344','2799009836','267619085','270191809','423570860','1088638583','27371889', '3414068431','417844901', '3491814695','3497428295', '3419908160','319204791','3493829093','145097439','417349794'))
+  filter(!id %in% c('292422757','3533463459','4069972808','80481421','3497428293', '3441085434','70166455', '80405300','2354904582','1308998006', '255687197','2799009872','1309031698','3146958062','1731763794','3268094343','3190767995','2489972624','1731763792','329974472','3574677130','264508125','329974475','3268094344','2799009836','267619085','270191809','423570860','1088638583','27371889', '3414068431','417844901', '3491814695','3497428295', '3419908160','319204791','3493829093','145097439','417349794','3497428793'))
 
 # voronoi
 library(deldir)
@@ -157,7 +153,8 @@ voronoipolygons = function(layer) {
                                                                                       function(x) slot(x, 'ID'))))
 }
 
-REF_stations.geoo <- over(REF_stations.geo, comm)
+# récupération des infos IRIS
+REF_stations.geoo <- over(REF_stations.geo, irisnew.sp)
 
 REF_stations.geo@data <- REF_stations.geo@data %>% cbind(REF_stations.geoo %>% dplyr::select(INSEE_COM, NOM_COM))
 
@@ -171,8 +168,8 @@ REF_stations.Z <- REF_stations.Z %>% dplyr::select(-c(x,y))
 
 #buffer sur 700 metres
 REF_stations.zt <- gBuffer(REF_stations.geo, width = 700, byid = F)
-
 REF_stations.ZT <- raster::crop(REF_stations.Z,REF_stations.zt)
+REF_stations.ZT.wgs84 <- spTransform(REF_stations.ZT, CRS("+init=epsg:4326"))
 
 ###########
 # passage IRIS
@@ -202,4 +199,18 @@ STATIONS_data <-
   summarise_if(is.numeric, funs(sum) ) %>%
   dplyr::select(-ratio_id_IRISnew)
 
-   
+# df pour ggplot également
+STATIONS_data_indics.f <-
+  REF_stations.geo@data %>%
+  left_join(STATIONS_data %>%
+            mutate(pct_P13_F65P_P13_POP = P13_F65P / P13_POP,
+                   DP90F65P = DP90F65 + DP90F70 + DP90F75 + DP90F80 + DP90F85 + DP90F90 + DP90F95,
+                   pct_DP90F65P_DP90T = DP90F65P / DP90T,
+                   diff_pct_P13_F65P_P13_POP_pct_DP90F65P_DP90T = pct_P13_F65P_P13_POP - pct_DP90F65P_DP90T)  ,
+            by =c("id" = "id")) %>%
+  as.data.frame()
+
+# suppression des fichiers temporaires
+rm(intersect.iris, intersect.iris.sta, mat_dist,min.dist, passage_IRIS, passage_IRIS.sta, stations_proches)
+rm(REF_stations.zt,REF_stations.Z ,REF_stations_full, REF_stations_ageoo, REF_stations_ageo2, REF_stations_ageo, json_stations)
+rm(list=ls(pattern="geos"))
