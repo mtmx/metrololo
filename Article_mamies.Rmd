@@ -17,7 +17,7 @@ A l'heure de la "smart city" augmentée par les outils numériques de ses citoye
 
 Pour ce premier épisode d'une petite série sur les disparités socio-démographiques au sein l'agglomération parisienne, honneur à nos ainées. Pour l'occasion on regroupe sous le terme affectif de "mamies" la population féminine âgée de plus de 65 ans, en espérant que personne n'en soit choquée. Elles sont 6,6 millions en France (selon les chiffres du dernier recensement de l'Insee en 2013) et représentent 10,4% de la population contre 8,9% en 1990, vieillissement global de la population oblige. Voici d'abord une carte de leur localisation dans le pays :
 
-```{r france,echo=F, message=F, warning=F, fig.width=5,fig.height=4}
+```{r france 1990,echo=F, message=F, warning=F, fig.width=5,fig.height=4}
 
 library(rgdal)
 library(cartography)
@@ -34,9 +34,6 @@ cols <- carto.pal(pal1 = "green.pal", n1 = 6)
 bks <- c(0, 0.06, 0.08, 0.12, 0.14, 1)
 
 opar <- par(mar = c(0,0,1.2,0))
-# Plot a layer with the extent of the EU28 countries with only a background color
-# plot(gBuffer(subset(dep, id %in% '75'), width = 3000), border = NA, col = NA)
-# Plot Nuts2 regions
 plot(dep.s, col = "grey60",border = "white", lwd=0.4, add=F)
 
 # choroplèthe
@@ -132,7 +129,7 @@ addCircleMarkers(data = STATIONS_data_indics.f,
                       color = "black") %>%
   addLegend("bottomright",
                colors = c(rev(brewer.pal(6,"Reds")), brewer.pal(6,"Blues")),
-               labels = c("< -5 pts","-5/-4 pts","-4/-3 pts","-3/-2 pts","-2/-1 pts","-1/0 pt","0/+1 pt","+1/+2 pts","+2/+3 pts","+3/+4 pts","+4/+5 pts","> 5 pts" ),
+               labels = rev(c("< -5 pts","-5/-4 pts","-4/-3 pts","-3/-2 pts","-2/-1 pts","-1/0 pt","0/+1 pt","+1/+2 pts","+2/+3 pts","+3/+4 pts","+4/+5 pts","> +5 pts" )),
                title = "Evolution 1990-2013",
                opacity = 1) %>%
   setMaxBounds( lng1 = min(STATIONS_data_indics.f$lon),
@@ -274,7 +271,6 @@ STATIONS_data_indics.f.petitecouronne <-
                ifelse(substr(INSEE_COM,1,2) %in% '93', "SEINE SAINT DENIS", 
               ifelse(substr(INSEE_COM,1,2) %in% '94', "VAL DE MARNE",INSEE_COM)))) %>%
   arrange(zone, pct_P13_F65P_P13_POP) %>%
-  #mutate(nom_station = factor(nom_station,levels = nom_station[order(desc(pct_P13_F65P_P13_POP))])) %>%
   group_by(zone) %>%
   mutate(n = row_number() )
 
@@ -353,7 +349,7 @@ STATIONS_data_indics.f.grandecouronne <-
   as.data.frame() %>%
   mutate(zone = ifelse(substr(INSEE_COM,1,2) %in% '77', "SEINE ET MARNE",
                        ifelse(substr(INSEE_COM,1,2) %in% '78', "YVELINES",  
-                              ifelse(substr(INSEE_COM,1,2) %in% '91', "ESSONE",
+                              ifelse(substr(INSEE_COM,1,2) %in% '91', "ESSONNE",
                                      ifelse(substr(INSEE_COM,1,2) %in% '95', "VAL D'OISE",INSEE_COM))))) %>%
   arrange(zone, pct_P13_F65P_P13_POP) %>%
   #mutate(nom_station = factor(nom_station,levels = nom_station[order(desc(pct_P13_F65P_P13_POP))])) %>%

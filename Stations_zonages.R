@@ -177,7 +177,7 @@ REF_stations.ZT.wgs84 <- spTransform(REF_stations.ZT, CRS("+init=epsg:4326"))
 REF_stations.ZT.sf <- st_as_sf(REF_stations.ZT)
 
 # table de correspondance
-intersect.iris.sta <- st_intersection(irisnew.IDF,REF_stations.ZT.sf )
+intersect.iris.sta <- st_intersection(irisnew.IDF.sf,REF_stations.ZT.sf )
 
 passage_IRIS.sta <- intersect.iris.sta %>% 
   mutate(area = st_area(.) %>% as.numeric()) %>%
@@ -192,8 +192,8 @@ STATIONS_data <-
   passage_IRIS.sta %>%
   as.data.frame() %>%
   dplyr::select(id, CODE_IRIS, ratio_id_IRISnew) %>%
-  left_join(IRISnew_RP1990 , by = c("CODE_IRIS" = "CODE_IRIS")) %>%
-  left_join(IRISnew_RP2013, by = c("CODE_IRIS" = "CODE_IRIS")) %>%
+  left_join(IRISnew_RP1990.idf , by = c("CODE_IRIS" = "CODE_IRIS")) %>%
+  left_join(IRISnew_RP2013.idf, by = c("CODE_IRIS" = "CODE_IRIS")) %>%
   mutate_each(funs( ratio_id_IRISnew * .), -c(id, CODE_IRIS,ratio_id_IRISnew)) %>%
   group_by(id) %>%
   summarise_if(is.numeric, funs(sum) ) %>%
@@ -206,9 +206,26 @@ STATIONS_data_indics.f <-
             mutate(pct_P13_F65P_P13_POP = P13_F65P / P13_POP,
                    DP90F65P = DP90F65 + DP90F70 + DP90F75 + DP90F80 + DP90F85 + DP90F90 + DP90F95,
                    pct_DP90F65P_DP90T = DP90F65P / DP90T,
-                   diff_pct_P13_F65P_P13_POP_pct_DP90F65P_DP90T = pct_P13_F65P_P13_POP - pct_DP90F65P_DP90T)  ,
+                   diff_pct_P13_F65P_P13_POP_pct_DP90F65P_DP90T = pct_P13_F65P_P13_POP - pct_DP90F65P_DP90T,
+                   DA90T0_5 = DA90H000 + DA90H001 + DA90H002 + DA90H003 + DA90H004 + DA90H005 + DA90F000 + DA90F001 + DA90F002 + DA90F003 + DA90F004 + DA90F005,
+                   pct_DA90T0_5_DP90T = DA90T0_5 / DP90T,
+                   P13_POP0_5 = P13_POP0002 + P13_POP0305,
+                   pct_P13_POP0_5_P13_POP = P13_POP0_5 / P13_POP,
+                   diff_pct_P13_POP0_5_P13_POP_pct_DA90T0_5_DP90T = pct_P13_POP0_5_P13_POP - pct_DA90T0_5_DP90T,
+                   pct_P13_NSCOL15P_SUP = P13_NSCOL15P_SUP / P13_NSCOL15P,
+                   pct_AF90TSUP = (AF90TBA2 + AF90TSUP) / AF90T15P)  ,
             by =c("id" = "id")) %>%
+  filter(!substr(INSEE_COM,1,2) %in% '60') %>%
   as.data.frame()
+
+# régression sur diplomés
+# regression locale https://fr.wikipedia.org/wiki/R%C3%A9gression_locale
+
+fit <- loess(pct_P13_NSCOL15P_SUP ~ log(pct_AF90TSUP), data = STATIONS_data_indics.f)
+
+STATIONS_data_indics.f <- 
+  STATIONS_data_indics.f %>%
+  mutate(res_log_dipl = residuals(fit))
 
 # suppression des fichiers temporaires
 rm(intersect.iris, intersect.iris.sta, mat_dist,min.dist, passage_IRIS, passage_IRIS.sta, stations_proches)

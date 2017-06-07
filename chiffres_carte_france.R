@@ -1,4 +1,3 @@
-
 library(dplyr)
 
 # chiffres totaux france
@@ -10,23 +9,23 @@ FR_stats <-
       summarise_if(is.numeric, funs(sum) ) ) %>%
   mutate(pct_P13_POPF = P13_POPF / P13_POP,
          pct_P13_NSCOL15P_SUP = P13_NSCOL15P_SUP / P13_NSCOL15P,
-         # pct_AF90TSUP = AF90TSUP / AF90T15P,
-         # pct_AT90TOU = AT90TOU / AT90TOU,
-         # pct_AT90TCA = AT90TCA / AT90TA,
+         pct_AF90TSUP = (AF90TBA2 + AF90TSUP) / AF90T15P,
+         pct_AT90TOU = AT90TOU / AT90TOU,
+         pct_AT90TCA = AT90TCA / AT90TA,
          pct_C13_ACT1564_CS3 = C13_ACT1564_CS3 / C13_ACT1564 ,
          pct_P13_F65P_P13_POP = P13_F65P / P13_POP,
          DP90F65P = DP90F65 + DP90F70 + DP90F75 + DP90F80 + DP90F85 + DP90F90 + DP90F95,
          pct_DP90F65P_DP90T = DP90F65P / DP90T,
-         # DA90T0_5 = DA90H000 + DA90H001 + DA90H002 + DA90H003 + DA90H004 + DA90H005 + DA90F000 + DA90F001 + DA90F002 + DA90F003 + DA90F004 + DA90F005,
-         # pct_DA90T0_5_DP90T = DA90T0_5 / DP90T,
+         DA90T0_5 = DA90H000 + DA90H001 + DA90H002 + DA90H003 + DA90H004 + DA90H005 + DA90F000 + DA90F001 + DA90F002 + DA90F003 + DA90F004 + DA90F005,
+         pct_DA90T0_5_DP90T = DA90T0_5 / DP90T,
          P13_POP0_5 = P13_POP0002 + P13_POP0305,
-         pct_P13_POP0_5_P13_POP = P13_POP0_5 / P13_POP
-         # diff_pct_P13_F65P_P13_POP_pct_DP90F65P_DP90T = pct_P13_F65P_P13_POP - pct_DP90F65P_DP90T,
-         # diff_pct_P13_POP0_5_P13_POP_pct_DA90T0_5_DP90T = pct_P13_POP0_5_P13_POP - pct_DA90T0_5_DP90T
+         pct_P13_POP0_5_P13_POP = P13_POP0_5 / P13_POP,
+         diff_pct_P13_F65P_P13_POP_pct_DP90F65P_DP90T = pct_P13_F65P_P13_POP - pct_DP90F65P_DP90T,
+         diff_pct_P13_POP0_5_P13_POP_pct_DA90T0_5_DP90T = pct_P13_POP0_5_P13_POP - pct_DA90T0_5_DP90T
          #pct_P13_NA17_JZ_TOT = NA17_JZ / NA17_TOT
   ) %>%
   as.data.frame() %>%
-  select(pct_P13_F65P_P13_POP, P13_F65P , P13_POP, pct_DP90F65P_DP90T , DP90F65P , DP90T) %>%
+  select(pct_P13_F65P_P13_POP, P13_F65P , P13_POP, pct_DP90F65P_DP90T , DP90F65P , DP90T, pct_P13_NSCOL15P_SUP,pct_AF90TSUP , P13_NSCOL15P_SUP, P13_NSCOL15P, pct_DA90T0_5_DP90T, P13_POP0_5, pct_P13_POP0_5_P13_POP) %>%
   View()
 
 
@@ -35,20 +34,22 @@ FR_stats <-
 COMM_RP2013 <-
   IRISnew_RP2013 %>%
   mutate(depcom = substr(CODE_IRIS,1,5)) %>%
+  mutate(P13_POP0_5 = P13_POP0002 + P13_POP0305) %>%
   group_by(depcom) %>%
   summarise_if(is.numeric, funs(sum) ) %>%
-  select(depcom, P13_F65P , P13_POP) %>%
+  #select(depcom, P13_F65P , P13_POP) %>%
   as.data.frame()
 
 # table data RP 1990 par commune
 
 COMM_RP1990 <-
   IRIS_RP1990 %>%
-  mutate(depcom = substr(IRIS2000,1,5)) %>%
+  mutate(depcom = substr(id,1,5)) %>%
   group_by(depcom) %>%
   summarise_if(is.numeric, funs(sum) ) %>%
   mutate(DP90F65P = DP90F65 + DP90F70 + DP90F75 + DP90F80 + DP90F85 + DP90F90 + DP90F95) %>%
-  select(depcom, DP90F65P , DP90T) %>%
+  mutate(DA90T0_5 = DA90H000 + DA90H001 + DA90H002 + DA90H003 + DA90H004 + DA90H005 + DA90F000 + DA90F001 + DA90F002 + DA90F003 + DA90F004 + DA90F005) %>%
+  #select(depcom, DP90F65P , DP90T) %>%
   as.data.frame()
 
 
@@ -63,18 +64,21 @@ COG_akinator(COMM_RP1990$depcom, donnees_insee = T)
 COMM_RP2013_sansPLM <-enlever_PLM(table_entree=COMM_RP2013,codgeo_entree = "depcom",libgeo=NULL,agregation = T)
 
 # data RP 1990 : enlever arrondissements Paris Lyon Marseille et convertir en COG 2015
-COMM_R1990_sansPLM <-enlever_PLM(table_entree=COMM_RP1990,codgeo_entree = "depcom",libgeo=NULL,agregation = T) 
-COMM_RP1990_COG2015 <- changement_COG_varNum(table_entree=COMM_R1990_sansPLM,annees=c(2015:1999),agregation=T,libgeo=T,donnees_insee=T)
+COMM_RP1990_sansPLM <-enlever_PLM(table_entree=COMM_RP1990,codgeo_entree = "depcom",libgeo=NULL,agregation = T) 
+COMM_RP1990_COG2015 <- changement_COG_varNum(table_entree=COMM_RP1990_sansPLM,annees=c(1999:2015),agregation=T,libgeo=T,donnees_insee=T)
 
 # data RP 1990 et 2013 en COG 2015
 COMM_RP1990_2013 <- COMM_RP2013_sansPLM %>% 
   left_join(COMM_RP1990_COG2015, by = c("depcom" = "depcom"))
-  
 
 # aggréger données par canton
 CV_RP1990_2013 <- nivsupra(table_entree = COMM_RP1990_2013, codgeo_entree = "depcom",nivsupra="CV",agregation=T)  %>% 
   mutate( pct_P13_F65P_P13_POP = (P13_F65P / P13_POP) * 100 ,
-          pct_DP90F65P_DP90T = (DP90F65P / DP90T) * 100) %>%
+          pct_DP90F65P_DP90T = (DP90F65P / DP90T) * 100,
+          pct_DA90T0_5_DP90T = (DA90T0_5 / DP90T) * 100,
+          pct_P13_POP0_5_P13_POP = (P13_POP0_5 / P13_POP) * 100,
+          pct_P13_NSCOL15P_SUP = (P13_NSCOL15P_SUP / P13_NSCOL15P) * 100,
+          pct_AF90TSUP = ( (AF90TBA2 + AF90TSUP)  / AF90T15P) * 100) %>%
   as.data.frame()
 
 # générer couche des cantons
@@ -96,19 +100,23 @@ library(cartography)
 library(rgeos)
 
 # Set a custom color palette
-cols <- carto.pal(pal1 = "green.pal", n1 = 6)
-bks <- c(0, 0.06, 0.08, 0.12, 0.14, 1)
-
+#cols <- carto.pal(pal1 = "green.pal", n1 = 6)
+#bks <- c(0, 0.06, 0.08, 0.12, 0.14, 1)
+bks <- c(0, 0.04, 0.06, 0.08, 0.1,0.12, 1)
+cols <- carto.pal(pal1 = "pink.pal", n1 = 6)
 opar <- par(mar = c(0,0,1.2,0))
 plot(dep.s, col = "grey60",border = "white", lwd=0.4, add=F)
+text(x = 1017863, y = 7051189, labels = "1990", cex = 1.8, adj = 0,col = "grey40")
+
 # choroplèthe
 choroLayer(spdf = CV_spdf.s, 
            df = CV_RP1990_2013, 
            spdfid = "id", 
            dfid = "CV", 
-           var = "pct_P13_F65P_P13_POP",
+           var = "pct_P13_POP0_5_P13_POP",
            col = cols,
-           breaks = bks * 100, 
+           #breaks = bks * 100, 
+           method = "quantile", nclass = 6,
            border = NA,  
            lwd = 0.2, 
            legend.pos = "right",
@@ -146,6 +154,8 @@ layoutLayer(title = titre,
             scale = NULL,
             frame = T, south = F, north = F)
 
+CV_RP1990_2013 %>% select(CV,LIBGEO, pct_AF90TSUP,  pct_P13_NSCOL15P_SUP ) %>% View()
+# cartogram ?
 
 # TROP LOURD
 ####### carto ggplot + ggiraph
