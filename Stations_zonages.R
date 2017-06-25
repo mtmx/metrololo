@@ -241,7 +241,7 @@ STATIONS_data_indics.f <-
 rm(intersect.iris, intersect.iris.sta, mat_dist,min.dist, passage_IRIS, passage_IRIS.sta, stations_proches)
 rm(REF_stations.zt,REF_stations.Z ,REF_stations_full, REF_stations_ageoo, REF_stations_ageo2, REF_stations_ageo, json_stations)
 rm(list=ls(pattern="geos"))
-
+ 
 
 # discontinuités taux de diplomés
 library(cartography)

@@ -7,7 +7,7 @@ categories: ["R"]
 tags: ["metros", "ville", "diplômés","gentrification"]
 
 ---
-
+ 
 ```{r setup, include=FALSE}
 options(width = 999)
 knitr::opts_chunk$set(echo = TRUE)
