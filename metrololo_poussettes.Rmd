@@ -67,8 +67,6 @@ layoutLayer(title = titre,
             scale = NULL,
             frame = T, south = F, north = F)
 
-```
-
 
 ```{r france 2013,echo=F, message=F, warning=F, fig.width=4.66,fig.height=4, out.extra='style="float:left"'}
 
@@ -109,8 +107,92 @@ layoutLayer(title = titre,
 ```
 
  
-
  
+{r,echo=FALSE, out.width='.49\\linewidth', fig.width=3, fig.height=3,fig.show='hold',fig.align='center'
+ 
+
+```{r france 1990_2013,echo=F, message=F, warning=F, out.width='.49\\linewidth', fig.width=3, fig.height=3,fig.show='hold',fig.align='center'}
+
+library(rgdal)
+library(cartography)
+library(rgeos)
+library(maptools)
+library(RColorBrewer)
+
+CV_RP1990_2013 <- read.csv2( "./extract/CV_RP1990_2013.csv")
+CV_spdf.s <- readShapeSpatial("./extract/CV_spdf.s.shp" ,proj4string=CRS("+init=epsg:2154"))
+dep.s <- readShapeSpatial("./extract/dep.s.shp" ,proj4string=CRS("+init=epsg:2154"))
+
+cols <- carto.pal(pal1 = "pink.pal", n1 = 8)
+cols <- colorRampPalette(brewer.pal(8,"PuRd"))(8)
+bks <- c(0, 0.04, 0.05,0.06,0.07, 0.08,0.09, 0.1, 1)
+
+opar <- par(mar = c(0,0,1.2,0))
+plot(dep.s, col = "grey60",border = "white", lwd=0.4, add=F)
+
+# choroplèthe
+choroLayer(spdf = CV_spdf.s, 
+           df = CV_RP1990_2013, 
+           spdfid = "id", 
+           dfid = "CV", 
+           var = "pct_DA90T0_5_DP90T",
+           col = cols,
+           breaks = bks * 100, 
+           #method = "quantile", nclass = 6,
+           border = NA,  
+           lwd = 0.2, 
+           legend.pos = "right",
+           legend.values.rnd = 1, 
+           legend.title.txt = "%", 
+           add = TRUE) 
+
+plot(dep.s, col = NA,border = "white", lwd=0.3, add=T)
+text(x = 1017863, y = 7051189, labels = "1990", cex = 1.8, adj = 0,col = "grey40")
+titre <- "Part des enfants (moins de 5 ans) dans la population, par canton"
+
+layoutLayer(title = titre,
+            col = "#949494",
+            sources = "Insee, RGP 1990",
+            author = "",
+            scale = NULL,
+            frame = T, south = F, north = F)
+
+cols <- carto.pal(pal1 = "pink.pal", n1 = 8)
+cols <- colorRampPalette(brewer.pal(8,"PuRd"))(8)
+bks <- c(0, 0.04, 0.05,0.06,0.07, 0.08,0.09, 0.1, 1)
+
+opar <- par(mar = c(0,0,1.2,0))
+plot(dep.s, col = "grey60",border = "white", lwd=0.4, add=F)
+
+# choroplèthe
+choroLayer(spdf = CV_spdf.s, 
+           df = CV_RP1990_2013, 
+           spdfid = "id", 
+           dfid = "CV", 
+           var = "pct_P13_POP0_5_P13_POP",
+           col = cols,
+           breaks = bks * 100, 
+           #method = "quantile", nclass = 6,
+           border = NA,  
+           lwd = 0.2, 
+           legend.pos = "right",
+           legend.values.rnd = 1, 
+           legend.title.txt = "%", 
+           add = TRUE) 
+
+plot(dep.s, col = NA,border = "white", lwd=0.3, add=T)
+text(x = 1017863, y = 7051189, labels = "2013", cex = 1.8, adj = 0,col = "grey40")
+titre <- "Part des enfants (moins de 5 ans) dans la population, par canton"
+
+layoutLayer(title = titre,
+            col = "#949494",
+            sources = "Insee, RP 2013",
+            author = "",
+            scale = NULL,
+            frame = T, south = F, north = F)
+
+```
+
 
 ## L'analyse infra-urbaine par station
 

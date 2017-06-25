@@ -132,7 +132,8 @@ View(stations_proches)
 # on les élimine à la mano pour conserver le meilleur libellé de station
 
 REF_stations.geo <- REF_stations.geo %>%
-  filter(!id %in% c('292422757','3533463459','4069972808','80481421','3497428293', '3441085434','70166455', '80405300','2354904582','1308998006', '255687197','2799009872','1309031698','3146958062','1731763794','3268094343','3190767995','2489972624','1731763792','329974472','3574677130','264508125','329974475','3268094344','2799009836','267619085','270191809','423570860','1088638583','27371889', '3414068431','417844901', '3491814695','3497428295', '3419908160','319204791','3493829093','145097439','417349794','3497428793'))
+  filter(!id %in% c('292422757','3533463459','4069972808','80481421','3497428293', '3441085434','70166455', '80405300','2354904582','1308998006', '255687197','2799009872','1309031698','3146958062','1731763794','3268094343','3190767995','2489972624','1731763792','329974472','3574677130','264508125','329974475','3268094344','2799009836','267619085','270191809','423570860','1088638583','27371889', '3414068431','417844901', '3491814695','3497428295', '3419908160','319204791','3493829093','145097439','417349794','3497428793')) %>%
+  mutate(nom_station = ifelse(nom_station %in% 'Bibliothèque François Mitterrand - Sortie 3', 'Bibliothèque François Mitterrand', as.character(nom_station)))
 
 # voronoi
 library(deldir)
@@ -194,12 +195,14 @@ STATIONS_data <-
   dplyr::select(id, CODE_IRIS, ratio_id_IRISnew) %>%
   left_join(IRISnew_RP1990.idf , by = c("CODE_IRIS" = "CODE_IRIS")) %>%
   left_join(IRISnew_RP2013.idf, by = c("CODE_IRIS" = "CODE_IRIS")) %>%
+  left_join(IRIS_RP2013_DIASPORAS_REG , by = c("CODE_IRIS" = "IRIS_estime")) %>%
+  left_join(IRIS_RP2013_COLOCATION , by = c("CODE_IRIS" = "IRIS_estime")) %>%
   mutate_each(funs( ratio_id_IRISnew * .), -c(id, CODE_IRIS,ratio_id_IRISnew)) %>%
   group_by(id) %>%
   summarise_if(is.numeric, funs(sum) ) %>%
   dplyr::select(-ratio_id_IRISnew)
 
-# df pour ggplot également
+# indicateurs complémentaires et coordonnées stations
 STATIONS_data_indics.f <-
   REF_stations.geo@data %>%
   left_join(STATIONS_data %>%
@@ -213,21 +216,40 @@ STATIONS_data_indics.f <-
                    pct_P13_POP0_5_P13_POP = P13_POP0_5 / P13_POP,
                    diff_pct_P13_POP0_5_P13_POP_pct_DA90T0_5_DP90T = pct_P13_POP0_5_P13_POP - pct_DA90T0_5_DP90T,
                    pct_P13_NSCOL15P_SUP = P13_NSCOL15P_SUP / P13_NSCOL15P,
-                   pct_AF90TSUP = (AF90TBA2 + AF90TSUP) / AF90T15P)  ,
+                   pct_AF90TSUP = (AF90TBA2 + AF90TSUP) / AF90T15P,
+                   pct_AO90TCAO = AO90TCAO /AT90TO,
+                   pct_C13_ACTOCC1564_CS3 = C13_ACTOCC1564_CS3 / C13_ACTOCC1564) %>%
+              mutate_each(funs(pct_POP = ./P13_POP), starts_with("LPRM")) %>%
+              mutate_each(funs(pct_POP = ./P13_POP), starts_with("REGNAI")),
             by =c("id" = "id")) %>%
   filter(!substr(INSEE_COM,1,2) %in% '60') %>%
   as.data.frame()
+
 
 # régression sur diplomés
 # regression locale https://fr.wikipedia.org/wiki/R%C3%A9gression_locale
 
 fit <- loess(pct_P13_NSCOL15P_SUP ~ log(pct_AF90TSUP), data = STATIONS_data_indics.f)
+#fit <- loess(pct_C13_ACTOCC1564_CS3 ~ log(pct_AO90TCAO), data = STATIONS_data_indics.f)
 
 STATIONS_data_indics.f <- 
   STATIONS_data_indics.f %>%
+  #mutate(res_log_cadres = residuals(fit))
   mutate(res_log_dipl = residuals(fit))
 
 # suppression des fichiers temporaires
 rm(intersect.iris, intersect.iris.sta, mat_dist,min.dist, passage_IRIS, passage_IRIS.sta, stations_proches)
 rm(REF_stations.zt,REF_stations.Z ,REF_stations_full, REF_stations_ageoo, REF_stations_ageo2, REF_stations_ageo, json_stations)
 rm(list=ls(pattern="geos"))
+
+
+# discontinuités taux de diplomés
+library(cartography)
+library(tmaptools)
+library(rgeos)
+REF_stations.Z.d <- append_data(REF_stations.ZT, STATIONS_data_indics.f, key.shp ="id" , key.data = "id")
+REF_stations.Z.d <- gBuffer(REF_stations.Z.d, byid=TRUE, width=0)
+
+# polylignes des frontières entre stations
+REF_stations.Z.contig.wgs84 <- getBorders(REF_stations.Z.d) %>% spTransform( CRS("+init=epsg:4326"))
+

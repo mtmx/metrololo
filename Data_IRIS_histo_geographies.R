@@ -30,12 +30,34 @@ dep$id <- row.names(dep)
 #sf
 comm.sf <- st_as_sf(comm)
 
-# shapes IRIS
-irisnew <- st_read("./data/geo/CONTOURS-IRIS.shp" ) %>% st_transform(crs = "+init=epsg:2154") 
+# shape IRIS 2013
+tmp <- tempdir()
+url_comm <- "https://wxs-telechargement.ign.fr/1yhlj2ehpqf3q6dt6a2y7b64/telechargement/inspire/CONTOURS-IRIS-2015-01-01$CONTOURS-IRIS_2-1__SHP_LAMB93_FXX_2016-11-10/file/CONTOURS-IRIS_2-1__SHP_LAMB93_FXX_2016-11-10.7z"
+download.file(url_comm, destfile = "/tmp/CONTOURS-IRIS_2-1__SHP_LAMB93_FXX_2016-11-10.7z")
+system("7z x -o/tmp /tmp/CONTOURS-IRIS_2-1__SHP_LAMB93_FXX_2016-11-10.7z")
+
+# importer shape des iris métropole + DOM
+IRIS_FRMET <- readOGR( dsn = "/tmp/CONTOURS-IRIS_2-1__SHP_LAMB93_FXX_2016-11-10/CONTOURS-IRIS/1_DONNEES_LIVRAISON_2015/CONTOURS-IRIS_2-1_SHP_LAMB93_FE-2015",  "CONTOURS-IRIS") 
+IRIS_FR971 <- readOGR( dsn = "/tmp/CONTOURS-IRIS_2-1__SHP_LAMB93_FXX_2016-11-10/CONTOURS-IRIS/1_DONNEES_LIVRAISON_2015/CONTOURS-IRIS_2-1_SHP_UTM20W84GUAD_D971-2015",  "CONTOURS-IRIS")
+IRIS_FR972 <- readOGR( dsn = "/tmp/CONTOURS-IRIS_2-1__SHP_LAMB93_FXX_2016-11-10/CONTOURS-IRIS/1_DONNEES_LIVRAISON_2015/CONTOURS-IRIS_2-1_SHP_UTM20W84MART_D972-2015",  "CONTOURS-IRIS")
+IRIS_FR973 <- readOGR( dsn = "/tmp/CONTOURS-IRIS_2-1__SHP_LAMB93_FXX_2016-11-10/CONTOURS-IRIS/1_DONNEES_LIVRAISON_2015/CONTOURS-IRIS_2-1_SHP_UTM22RGFG95_D973-2015",  "CONTOURS-IRIS")
+IRIS_FR974 <- readOGR( dsn = "/tmp/CONTOURS-IRIS_2-1__SHP_LAMB93_FXX_2016-11-10/CONTOURS-IRIS/1_DONNEES_LIVRAISON_2015/CONTOURS-IRIS_2-1_SHP_RGR92UTM40S_D974-2015",  "CONTOURS-IRIS")
+
+# liste des IRIS d'apres le fonds carto
+# france métropolitaine et DOM
+IRIS_FR_df <-
+  IRIS_FRMET %>% as.data.frame() %>%
+  rbind(IRIS_FR971 %>% as.data.frame()) %>%
+  rbind(IRIS_FR972 %>% as.data.frame()) %>%
+  rbind(IRIS_FR973 %>% as.data.frame()) %>%
+  rbind(IRIS_FR974 %>% as.data.frame()) 
+
+irisnew <- st_read("/tmp/CONTOURS-IRIS_2-1__SHP_LAMB93_FXX_2016-11-10/CONTOURS-IRIS/1_DONNEES_LIVRAISON_2015/CONTOURS-IRIS_2-1_SHP_LAMB93_FE-2015/CONTOURS-IRIS.shp") %>% st_transform(crs = "+init=epsg:2154") 
+# shapes IRIS 2000
 iris2000 <- st_read("./data/geo/IRIS2000_RGF93.shp") %>% st_transform(crs = "+init=epsg:2154") 
 
 #en format sp également 
-irisnew.sp <- readOGR("./data/geo/", "CONTOURS-IRIS") %>% spTransform( CRS("+init=epsg:2154"))
+irisnew.sp <- readOGR("/tmp/CONTOURS-IRIS_2-1__SHP_LAMB93_FXX_2016-11-10/CONTOURS-IRIS/1_DONNEES_LIVRAISON_2015/CONTOURS-IRIS_2-1_SHP_LAMB93_FE-2015/", "CONTOURS-IRIS") %>% spTransform( CRS("+init=epsg:2154"))
 iris2000.sp <- readOGR("./data/geo/", "IRIS2000_RGF93") %>% spTransform( CRS("+init=epsg:2154"))
 
 
