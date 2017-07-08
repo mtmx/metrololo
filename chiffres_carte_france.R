@@ -25,7 +25,7 @@ FR_stats <-
          #pct_P13_NA17_JZ_TOT = NA17_JZ / NA17_TOT
   ) %>%
   as.data.frame() %>%
-  select(pct_P13_F65P_P13_POP, P13_F65P , P13_POP, pct_DP90F65P_DP90T , DP90F65P , DP90T, pct_P13_NSCOL15P_SUP,pct_AF90TSUP , P13_NSCOL15P_SUP, P13_NSCOL15P, pct_DA90T0_5_DP90T, P13_POP0_5, pct_P13_POP0_5_P13_POP) %>%
+  select(pct_P13_F65P_P13_POP, P13_F65P , P13_POP, pct_DP90F65P_DP90T , DP90F65P , DP90T, pct_P13_NSCOL15P_SUP,pct_AF90TSUP , P13_NSCOL15P_SUP, P13_NSCOL15P,DA90T0_5, pct_DA90T0_5_DP90T, P13_POP0_5, pct_P13_POP0_5_P13_POP) %>%
   View()
 
 
@@ -81,18 +81,6 @@ CV_RP1990_2013 <- nivsupra(table_entree = COMM_RP1990_2013, codgeo_entree = "dep
           pct_AF90TSUP = ( (AF90TBA2 + AF90TSUP)  / AF90T15P) * 100) %>%
   as.data.frame()
 
-# générer couche des cantons
-library(tmap)
-library(tmaptools)
-library(rgeos)
-comm_supra <- append_data(comm, table_supracom, key.shp = "INSEE_COM", key.data = "CODGEO")
-CV_spdf <- gUnaryUnion(comm_supra, comm_supra$CV)
-CV_spdf$id <- row.names(CV_spdf)
-
-# simplifier les geometries
-library(rmapshaper)
-CV_spdf.s <- ms_simplify(CV_spdf, keep = 0.1)
-dep.s <- ms_simplify(dep, keep = 0.1)
 
 ##### carto
 
@@ -103,20 +91,20 @@ library(rgeos)
 #cols <- carto.pal(pal1 = "green.pal", n1 = 6)
 #bks <- c(0, 0.06, 0.08, 0.12, 0.14, 1)
 bks <- c(0, 0.04, 0.06, 0.08, 0.1,0.12, 1)
-cols <- carto.pal(pal1 = "pink.pal", n1 = 6)
+cols <- carto.pal(pal1 = "pink.pal", n1 = 8)
 opar <- par(mar = c(0,0,1.2,0))
 plot(dep.s, col = "grey60",border = "white", lwd=0.4, add=F)
-text(x = 1017863, y = 7051189, labels = "1990", cex = 1.8, adj = 0,col = "grey40")
+#text(x = 1017863, y = 7051189, labels = "1990", cex = 1.8, adj = 0,col = "grey40")
 
 # choroplèthe
-choroLayer(spdf = CV_spdf.s, 
-           df = CV_RP1990_2013, 
+choroLayer(spdf = CV_spdf.s, #CV_spdf.s, 
+           df = CV_RP2013_COLOCATION, #CV_RP1990_2013, 
            spdfid = "id", 
-           dfid = "CV", 
-           var = "pct_P13_POP0_5_P13_POP",
+           dfid = "CANTVILLE", #"CV", 
+           var = "LPRM_3_pct_POP",
            col = cols,
            #breaks = bks * 100, 
-           method = "quantile", nclass = 6,
+           method = "quantile", nclass = 8,
            border = NA,  
            lwd = 0.2, 
            legend.pos = "right",

@@ -195,8 +195,8 @@ STATIONS_data <-
   dplyr::select(id, CODE_IRIS, ratio_id_IRISnew) %>%
   left_join(IRISnew_RP1990.idf , by = c("CODE_IRIS" = "CODE_IRIS")) %>%
   left_join(IRISnew_RP2013.idf, by = c("CODE_IRIS" = "CODE_IRIS")) %>%
-  left_join(IRIS_RP2013_DIASPORAS_REG , by = c("CODE_IRIS" = "IRIS_estime")) %>%
-  left_join(IRIS_RP2013_COLOCATION , by = c("CODE_IRIS" = "IRIS_estime")) %>%
+  left_join(IRIS_RP2013_DIASPORAS_REG , by = c("CODE_IRIS" = "IRIS")) %>%
+  left_join(IRIS_RP2013_COLOCATION , by = c("CODE_IRIS" = "IRIS")) %>%
   mutate_each(funs( ratio_id_IRISnew * .), -c(id, CODE_IRIS,ratio_id_IRISnew)) %>%
   group_by(id) %>%
   summarise_if(is.numeric, funs(sum) ) %>%
@@ -219,7 +219,7 @@ STATIONS_data_indics.f <-
                    pct_AF90TSUP = (AF90TBA2 + AF90TSUP) / AF90T15P,
                    pct_AO90TCAO = AO90TCAO /AT90TO,
                    pct_C13_ACTOCC1564_CS3 = C13_ACTOCC1564_CS3 / C13_ACTOCC1564) %>%
-              mutate_each(funs(pct_POP = ./P13_POP), starts_with("LPRM")) %>%
+              mutate_each(funs(pct_POP_sup20 =100* ./P13_POP_sup20), starts_with("LPRM")) %>%
               mutate_each(funs(pct_POP = ./P13_POP), starts_with("REGNAI")),
             by =c("id" = "id")) %>%
   filter(!substr(INSEE_COM,1,2) %in% '60') %>%

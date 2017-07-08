@@ -13,6 +13,8 @@ library(sf)
 library(dplyr)
 library(spdplyr)
 library(rgdal)
+options(java.parameters = "-Xmx8g")
+library(XLConnect)
 
 # reférentiel GEOFLA janvier 2017 IGN
 #https://wxs-telechargement.ign.fr/x02uy2aiwjo9bm8ce5plwqmr/telechargement/prepackage/ADMINEXPRESS-PACK_2017-01-18$ADMINEXPRESS_1-0__SHP_LAMB93_FXX_2017-01-18/file/ADMINEXPRESS_1-0__SHP_LAMB93_FXX_2017-01-18.7z
@@ -61,6 +63,48 @@ irisnew.sp <- readOGR("/tmp/CONTOURS-IRIS_2-1__SHP_LAMB93_FXX_2016-11-10/CONTOUR
 iris2000.sp <- readOGR("./data/geo/", "IRIS2000_RGF93") %>% spTransform( CRS("+init=epsg:2154"))
 
 
+
+# générer couche des cantons 2017
+library(tmap)
+library(tmaptools)
+library(rgeos)
+comm_supra <- append_data(comm, table_supracom, key.shp = "INSEE_COM", key.data = "CODGEO")
+CV_spdf <- gUnaryUnion(comm_supra, comm_supra$CV)
+CV_spdf$id <- row.names(CV_spdf)
+
+# simplifier les geometries
+library(rmapshaper)
+CV_spdf.s <- ms_simplify(CV_spdf, keep = 0.1)
+dep.s <- ms_simplify(dep, keep = 0.1)
+
+# cantons 2015
+# communes 2015
+url_comm <- "https://wxs-telechargement.ign.fr/oikr5jryiph0iwhw36053ptm/telechargement/inspire/GEOFLA_THEME-COMMUNE_2015_2$GEOFLA_2-1_COMMUNE_SHP_LAMB93_FXX_2015-12-01/file/GEOFLA_2-1_COMMUNE_SHP_LAMB93_FXX_2015-12-01.7z"
+download.file(url_comm, destfile = "/tmp/GEOFLA_2-1_COMMUNE_SHP_LAMB93_FXX_2015-12-01.7z")
+system("7z x -o/tmp /tmp/GEOFLA_2-1_COMMUNE_SHP_LAMB93_FXX_2015-12-01.7z")
+COMM2015_FRMET <- readOGR( dsn = "/tmp/GEOFLA_2-1_COMMUNE_SHP_LAMB93_FXX_2015-12-01/GEOFLA/1_DONNEES_LIVRAISON_2015/GEOFLA_2-1_SHP_LAMB93_FR-ED152/COMMUNE",  "COMMUNE") 
+COMM2015_FRMET@data <-COMM2015_FRMET@data %>% mutate(DEPCOM = ifelse(substr(INSEE_COM,1,2) == '75' ,'75056',
+                       ifelse(substr(INSEE_COM,1,3) == '132' ,'13055',
+                              ifelse(substr(INSEE_COM,1,4) == '6938' ,'69123',as.character(INSEE_COM)))) ) 
+
+url_data <- "https://www.insee.fr/fr/statistiques/fichier/2028028/table-appartenance-geo-communes-15.zip"
+download.file(url_data, destfile = "/tmp/table-appartenance-geo-communes-14.zip")
+system("7z x -o/tmp /tmp/table-appartenance-geo-communes-15.zip")
+
+COMM_APPARTENANCEGEO_2015 <- loadWorkbook("/tmp/table-appartenance-geo-communes-15.xls") %>%
+  readWorksheet( "COM", header = T, startRow = 6) %>%
+# ou quelques modifs pour que ça colle
+  mutate(can = ifelse(CV %in% '69ZZ', '6999',
+                      ifelse(CV %in% '75ZZ', '7599',
+                             ifelse(CV %in% '972ZZ', '97299',
+                                    ifelse(CV %in% '973ZZ', '97399', as.character(CV))))))
+
+comm2015_supra <- append_data(COMM2015_FRMET, COMM_APPARTENANCEGEO_2015, key.shp = "DEPCOM", key.data = "codgeo")
+CV2015_spdf <- gUnaryUnion(comm2015_supra, comm2015_supra$can)
+CV2015_spdf$id <- row.names(CV2015_spdf)
+CV2015_spdf.s <- ms_simplify(CV2015_spdf, keep = 0.1)
+
+
 #############################
 # données du RP sur IRIS  1990 et en cours / ventilation sur nouvelle géographie des IRIS
 
@@ -70,8 +114,6 @@ iris2000.sp <- readOGR("./data/geo/", "IRIS2000_RGF93") %>% spTransform( CRS("+i
 
 # data IRIS RP 2013
 # source : https://insee.fr/fr/information/2409289
-options(java.parameters = "-Xmx8g")
-library(XLConnect)
 
 IRIS_RP2013_POP <- loadWorkbook("./data/stat/base-ic-evol-struct-pop-2013.xls") %>%
   readWorksheet( "IRIS", header = T, startRow = 6) %>%
