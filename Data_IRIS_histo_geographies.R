@@ -103,7 +103,7 @@ comm2015_supra <- append_data(COMM2015_FRMET, COMM_APPARTENANCEGEO_2015, key.shp
 CV2015_spdf <- gUnaryUnion(comm2015_supra, comm2015_supra$can)
 CV2015_spdf$id <- row.names(CV2015_spdf)
 CV2015_spdf.s <- ms_simplify(CV2015_spdf, keep = 0.1)
-
+ 
 
 #############################
 # données du RP sur IRIS  1990 et en cours / ventilation sur nouvelle géographie des IRIS

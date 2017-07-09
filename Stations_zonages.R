@@ -13,7 +13,7 @@ library(tidyr)
 src <- "http://api.openstreetmap.fr/oapi/interpreter?data=[out:json];node[%22type:RATP%22~%22metro|rer|tram%22];out;way[%22type:RATP%22~%22metro|rer|tram%22];out;%3E;out%20skel;"
 
 json_stations <- jsonlite::fromJSON(src)
-
+ 
 REF_stations <- 
   as.data.frame(json_stations$elements) %>%
   select(id, lat,lon) %>%
